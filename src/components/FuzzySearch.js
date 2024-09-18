@@ -75,6 +75,7 @@ const FuzzySearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [apiResponse, setApiResponse] = useState('');
+  const [selectedItem, setSelectedItem] = useState('');
 
   // Create a memoized instance of Fzf
   const fzf = useMemo(() => new Fzf(mockFilePaths), []);
@@ -96,6 +97,7 @@ const FuzzySearch = () => {
   const handleSelect = (path) => {
     setSearchResults([]);
     setSearchTerm('');
+    setSelectedItem(path);
     
     // Mock API call
     const url = `https://example.org/${encodeURIComponent(path)}`;
@@ -133,6 +135,12 @@ const FuzzySearch = () => {
             </li>
           ))}
         </ul>
+      )}
+      {selectedItem && (
+        <div className="selected-item">
+          <h5>Selected API:</h5>
+          <h6>{selectedItem}</h6>
+        </div>
       )}
       {apiResponse && (
         <div className="api-response">

@@ -2,26 +2,16 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Fzf } from 'fzf';
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
 import yaml_lang from 'react-syntax-highlighter/dist/esm/languages/hljs/yaml';
+import json_lang from 'react-syntax-highlighter/dist/esm/languages/hljs/json';
 import { docco } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import yaml from 'js-yaml';
 import './FuzzySearch.css';
 
-const mockResponseYamlString = `
-mock_response:
-  - This is a line of mock API response text.
-  - This is a line of mock API response text.
-  - This is a line of mock API response text.
-  - This is a line of mock API response text.
-  - This is a line of mock API response text.
-  - This is a line of mock API response text.
-test1:
-  test2: hello world!
-`
-
-// Parse the YAML string
-const mockResponse = yaml.load(mockResponseYamlString);
-
 SyntaxHighlighter.registerLanguage('yaml', yaml_lang);
+SyntaxHighlighter.registerLanguage('json', json_lang);
+
+// Configuration
+const API_BASE_URL = 'http://127.0.0.1:8000/api'; // Replace with your actual API base URL
 
 // Extended mock list of file paths
 const mockFilePaths = [
@@ -75,7 +65,10 @@ const FuzzySearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [apiResponse, setApiResponse] = useState('');
+  const [responseFormat, setResponseFormat] = useState('text');
   const [selectedItem, setSelectedItem] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Create a memoized instance of Fzf
   const fzf = useMemo(() => new Fzf(mockFilePaths), []);
@@ -94,17 +87,53 @@ const FuzzySearch = () => {
     return path.length > 200 ? path.substring(0, 197) + '...' : path;
   };
 
-  const handleSelect = (path) => {
+  const handleSelect = async (path) => {
     setSearchResults([]);
     setSearchTerm('');
     setSelectedItem(path);
+    setIsLoading(true);
+    setError(null);
     
-    // Mock API call
-    const url = `http://127.0.0.1:8000/api/${encodeURIComponent(path)}`;
+    const url = `${API_BASE_URL}/${btoa(path)}`;
     console.log(`API call to: ${url}`);
     
-    // Use the mock response from the YAML file
-    setApiResponse(yaml.dump(mockResponse));
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.text();
+      
+      // Try to parse as JSON
+      try {
+        console.log(data)
+        const yamlData = yaml.load(data);
+        setApiResponse(yamlData);
+        setResponseFormat('yaml');
+        console.log("Yaml")
+        console.log(yaml.dump(yamlData))
+      } catch (e) {
+        // If parsing as JSON fails, treat as YAML or plain text
+        try {
+          const jsonData = JSON.parse(data);
+          setApiResponse(JSON.stringify(jsonData, null, 2));
+          setResponseFormat('json');
+          console.log("Json")
+        } catch (e) {
+          // If parsing as YAML also fails, treat as plain text
+          setApiResponse(data);
+          setResponseFormat('text');
+          console.log("Test")
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching data:', e);
+      setError('Failed to fetch API response. Please try again.');
+      setApiResponse('');
+      setResponseFormat('text');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCopy = () => {
@@ -142,13 +171,15 @@ const FuzzySearch = () => {
           <p>{selectedItem}</p>
         </div>
       )}
+      {isLoading && <div className="loading">Loading...</div>}
+      {error && <div className="error">{error}</div>}
       {apiResponse && (
         <div className="api-response">
           <div className="api-response-header">
             <h6>Rest API</h6>
             <button onClick={handleCopy} className="copy-button">Copy</button>
           </div>
-          <SyntaxHighlighter language="yaml" style={docco}>
+          <SyntaxHighlighter language={responseFormat === 'json' ? 'json' : 'yaml'} style={docco}>
             {apiResponse}
           </SyntaxHighlighter>
         </div>

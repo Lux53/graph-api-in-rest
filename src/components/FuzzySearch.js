@@ -1,6 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Fzf } from 'fzf';
+import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
+import yaml_lang from 'react-syntax-highlighter/dist/esm/languages/hljs/yaml';
+import { docco } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import yaml from 'js-yaml';
 import './FuzzySearch.css';
+
+const mockResponseYamlString = `
+mock_response:
+  - This is a line of mock API response text.
+  - This is a line of mock API response text.
+  - This is a line of mock API response text.
+  - This is a line of mock API response text.
+  - This is a line of mock API response text.
+  - This is a line of mock API response text.
+test1:
+  test2: hello world!
+`
+
+// Parse the YAML string
+const mockResponse = yaml.load(mockResponseYamlString);
+
+SyntaxHighlighter.registerLanguage('yaml', yaml_lang);
 
 // Extended mock list of file paths
 const mockFilePaths = [
@@ -80,9 +101,16 @@ const FuzzySearch = () => {
     const url = `https://example.org/${encodeURIComponent(path)}`;
     console.log(`API call to: ${url}`);
     
-    // Mock API response (1000 lines of text)
-    const mockResponse = Array(1000).fill('This is a line of mock API response text.').join('\n');
-    setApiResponse(mockResponse);
+    // Use the mock response from the YAML file
+    setApiResponse(yaml.dump(mockResponse));
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(apiResponse).then(() => {
+      alert('Response copied to clipboard!');
+    }, (err) => {
+      console.error('Could not copy text: ', err);
+    });
   };
 
   return (
@@ -108,8 +136,13 @@ const FuzzySearch = () => {
       )}
       {apiResponse && (
         <div className="api-response">
-          <h6>Rest API</h6>
-          <pre>{apiResponse}</pre>
+          <div className="api-response-header">
+            <h6>Rest API</h6>
+            <button onClick={handleCopy} className="copy-button">Copy</button>
+          </div>
+          <SyntaxHighlighter language="yaml" style={docco}>
+            {apiResponse}
+          </SyntaxHighlighter>
         </div>
       )}
     </div>

@@ -11,7 +11,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Fuzzy File Search</h1>
+        <h3>Graph API Converter</h3>
         <FuzzySearch onDownload={handleDownload} />
       </header>
     </div>

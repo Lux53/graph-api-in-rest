@@ -50,10 +50,10 @@ const HighlightChars = (props) => {
   return <>{nodes}</>;
 };
 
-const FuzzySearch = ({ onDownload }) => {
+const FuzzySearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [selectedPath, setSelectedPath] = useState('');
+  const [apiResponse, setApiResponse] = useState('');
 
   // Create a memoized instance of Fzf
   const fzf = useMemo(() => new Fzf(mockFilePaths), []);
@@ -73,9 +73,16 @@ const FuzzySearch = ({ onDownload }) => {
   };
 
   const handleSelect = (path) => {
-    setSelectedPath(path);
     setSearchResults([]);
     setSearchTerm('');
+    
+    // Mock API call
+    const url = `https://example.org/${encodeURIComponent(path)}`;
+    console.log(`API call to: ${url}`);
+    
+    // Mock API response (1000 lines of text)
+    const mockResponse = Array(1000).fill('This is a line of mock API response text.').join('\n');
+    setApiResponse(mockResponse);
   };
 
   return (
@@ -99,12 +106,10 @@ const FuzzySearch = ({ onDownload }) => {
           ))}
         </ul>
       )}
-      {selectedPath && (
-        <div className="selected-path">
-          <p>Selected: {selectedPath}</p>
-          <button onClick={() => onDownload(selectedPath)} className="download-button">
-            Download
-          </button>
+      {apiResponse && (
+        <div className="api-response">
+          <h6>Rest API</h6>
+          <pre>{apiResponse}</pre>
         </div>
       )}
     </div>

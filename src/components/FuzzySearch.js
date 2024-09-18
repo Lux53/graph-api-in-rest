@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import Fuse from 'fuse.js';
+import { Fzf } from 'fzf';
 import './FuzzySearch.css';
 
 // Extended mock list of file paths
@@ -36,19 +36,27 @@ const mockFilePaths = [
   '/home/user/projects/flutter-app/main.dart',
 ];
 
+const HighlightChars = (props) => {
+  const chars = props.str.split("");
+
+  const nodes = chars.map((char, i) => {
+    if (props.indices.has(i)) {
+      return <b key={i}>{char}</b>;
+    } else {
+      return char;
+    }
+  });
+
+  return <>{nodes}</>;
+};
+
 const FuzzySearch = ({ onDownload }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedPath, setSelectedPath] = useState('');
 
-  // Create a memoized instance of Fuse
-  const fuse = useMemo(() => new Fuse(mockFilePaths, {
-    includeMatches: true,
-    threshold: 0.2,
-    distance: 1000,
-    minMatchCharLength: 2,
-    ignoreLocation: true,
-  }), []);
+  // Create a memoized instance of Fzf
+  const fzf = useMemo(() => new Fzf(mockFilePaths), []);
 
   useEffect(() => {
     if (searchTerm === '') {
@@ -56,32 +64,9 @@ const FuzzySearch = ({ onDownload }) => {
       return;
     }
 
-    const results = fuse.search(searchTerm);
+    const results = fzf.find(searchTerm);
     setSearchResults(results.slice(0, 10)); // Limit to 10 results
-  }, [searchTerm, fuse]);
-
-  const highlightMatch = (text, matches) => {
-    if (!matches) return text;
-
-    const sortedMatches = matches.sort((a, b) => a[0] - b[0]);
-    let result = [];
-    let lastIndex = 0;
-
-    sortedMatches.forEach((match) => {
-      const [start, end] = match;
-      if (start > lastIndex) {
-        result.push(text.slice(lastIndex, start));
-      }
-      result.push(<b key={start}>{text.slice(start, end + 1)}</b>);
-      lastIndex = end + 1;
-    });
-
-    if (lastIndex < text.length) {
-      result.push(text.slice(lastIndex));
-    }
-
-    return result;
-  };
+  }, [searchTerm, fzf]);
 
   const truncatePath = (path) => {
     return path.length > 200 ? path.substring(0, 197) + '...' : path;
@@ -106,7 +91,10 @@ const FuzzySearch = ({ onDownload }) => {
         <ul className="search-results">
           {searchResults.map((result, index) => (
             <li key={index} onClick={() => handleSelect(result.item)}>
-              {highlightMatch(truncatePath(result.item), result.matches[0].indices)}
+              <HighlightChars
+                str={truncatePath(result.item)}
+                indices={new Set(result.positions)}
+              />
             </li>
           ))}
         </ul>

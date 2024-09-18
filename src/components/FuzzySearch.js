@@ -66,7 +66,7 @@ const FuzzySearch = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [apiResponse, setApiResponse] = useState('');
   const [responseFormat, setResponseFormat] = useState('text');
-  const [selectedItem, setSelectedItem] = useState('');
+  const [selectedItems, setSelectedItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -87,48 +87,65 @@ const FuzzySearch = () => {
     return path.length > 200 ? path.substring(0, 197) + '...' : path;
   };
 
-  const handleSelect = async (path) => {
-    setSearchResults([]);
-    setSearchTerm('');
-    setSelectedItem(path);
+  const handleSelect = (path) => {
+    if (!selectedItems.includes(path)) {
+      setSelectedItems([...selectedItems, path]);
+    }
+  };
+
+  const handleDelete = (path) => {
+    setSelectedItems(selectedItems.filter(item => item !== path));
+  };
+
+  const handleBatchRequest = async () => {
+    if (selectedItems.length === 0) {
+      setError('No items selected. Please select at least one item.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     
-    const url = `${API_BASE_URL}/${btoa(path)}`;
+    // const encodedItems = selectedItems.map(item => btoa(item));
+    const url = `${API_BASE_URL}/batch`;
     console.log(`API call to: ${url}`);
     
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items: selectedItems }),
+      });
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorBody = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
       }
+
       const data = await response.text();
       
-      // Try to parse as JSON
+      // Try to parse as YAML
       try {
-        console.log(data)
         const yamlData = yaml.load(data);
-        setApiResponse(yamlData);
+        setApiResponse(yaml.dump(yamlData));
         setResponseFormat('yaml');
-        console.log("Yaml")
-        console.log(yaml.dump(yamlData))
       } catch (e) {
-        // If parsing as JSON fails, treat as YAML or plain text
+        // If parsing as YAML fails, try JSON
         try {
           const jsonData = JSON.parse(data);
           setApiResponse(JSON.stringify(jsonData, null, 2));
           setResponseFormat('json');
-          console.log("Json")
         } catch (e) {
-          // If parsing as YAML also fails, treat as plain text
+          // If parsing as JSON also fails, treat as plain text
           setApiResponse(data);
           setResponseFormat('text');
-          console.log("Test")
         }
       }
     } catch (e) {
       console.error('Error fetching data:', e);
-      setError('Failed to fetch API response. Please try again.');
+      setError(`Failed to fetch API response: ${e.message}`);
       setApiResponse('');
       setResponseFormat('text');
     } finally {
@@ -165,10 +182,22 @@ const FuzzySearch = () => {
           ))}
         </ul>
       )}
-      {selectedItem && (
-        <div className="selected-item">
-          <h6>Selected API:</h6>
-          <p>{selectedItem}</p>
+      {selectedItems.length > 0 && (
+        <div className="selected-items">
+          <h6>Selected Items:</h6>
+          <ul>
+            {selectedItems.map((item, index) => (
+              <li key={index}>
+                {item}
+                <button onClick={() => handleDelete(item)} className="delete-button">
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button onClick={handleBatchRequest} className="batch-request-button">
+            Convert 
+          </button>
         </div>
       )}
       {isLoading && <div className="loading">Loading...</div>}
@@ -176,7 +205,7 @@ const FuzzySearch = () => {
       {apiResponse && (
         <div className="api-response">
           <div className="api-response-header">
-            <h6>Rest API</h6>
+            <h6>Rest API Response</h6>
             <button onClick={handleCopy} className="copy-button">Copy</button>
           </div>
           <SyntaxHighlighter language={responseFormat === 'json' ? 'json' : 'yaml'} style={docco}>

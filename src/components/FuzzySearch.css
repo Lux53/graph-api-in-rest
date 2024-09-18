@@ -46,6 +46,30 @@
   background-color: #f0f0f0;
 }
 
+.selected-item {
+  margin-top: 20px;
+  width: 100%;
+  text-align: left;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.selected-item h6 {
+  margin: 0 0 5px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.selected-item p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  word-break: break-all;
+}
+
 .api-response {
   margin-top: 20px;
   width: 100%;

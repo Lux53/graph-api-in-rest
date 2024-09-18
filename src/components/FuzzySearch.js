@@ -100,7 +100,7 @@ const FuzzySearch = () => {
     setSelectedItem(path);
     
     // Mock API call
-    const url = `https://example.org/${encodeURIComponent(path)}`;
+    const url = `http://127.0.0.1:8000/api/${encodeURIComponent(path)}`;
     console.log(`API call to: ${url}`);
     
     // Use the mock response from the YAML file
@@ -138,8 +138,8 @@ const FuzzySearch = () => {
       )}
       {selectedItem && (
         <div className="selected-item">
-          <h5>Selected API:</h5>
-          <h6>{selectedItem}</h6>
+          <h6>Selected API:</h6>
+          <p>{selectedItem}</p>
         </div>
       )}
       {apiResponse && (

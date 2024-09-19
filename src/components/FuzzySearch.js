@@ -69,6 +69,8 @@ const FuzzySearch = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showExistingApiInput, setShowExistingApiInput] = useState(false);
+  const [existingApiInput, setExistingApiInput] = useState('');
 
   // Create a memoized instance of Fzf
   const fzf = useMemo(() => new Fzf(mockFilePaths), []);
@@ -190,6 +192,14 @@ const FuzzySearch = () => {
     );
   };
 
+  const handleAddExistingApi = () => {
+    setShowExistingApiInput(!showExistingApiInput);
+  };
+
+  const handleExistingApiInputChange = (e) => {
+    setExistingApiInput(e.target.value);
+  };
+
   return (
     <div className="fuzzy-search">
       <input
@@ -224,10 +234,24 @@ const FuzzySearch = () => {
               </li>
             ))}
           </ul>
-          <button onClick={handleBatchRequest} className="batch-request-button">
-            Convert 
-          </button>
+          <div className="button-container">
+            <button onClick={handleBatchRequest} className="batch-request-button">
+              Convert 
+            </button>
+            <button onClick={handleAddExistingApi} className="add-existing-api-button">
+              Add existing API
+            </button>
+          </div>
         </div>
+      )}
+      {showExistingApiInput && (
+        <textarea
+          value={existingApiInput}
+          onChange={handleExistingApiInputChange}
+          placeholder="Paste your existing API here..."
+          className="existing-api-input"
+          rows={10}
+        />
       )}
       {isLoading && <div className="loading">Loading...</div>}
       {error && <div className="error">{error}</div>}

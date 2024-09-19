@@ -161,6 +161,35 @@ const FuzzySearch = () => {
     });
   };
 
+  const DownloadButton = ({ fileContent, fileName, fileType }) => {
+    const handleDownload = () => {
+      // Create a Blob with the file content
+      const blob = new Blob([fileContent], { type: fileType });
+      
+      // Create a temporary URL for the Blob
+      const url = URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      
+      // Programmatically click the link to trigger the download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+  
+    return (
+      <button onClick={handleDownload} className="copy-button">
+        Download File
+      </button>
+    );
+  };
+
   return (
     <div className="fuzzy-search">
       <input
@@ -206,7 +235,14 @@ const FuzzySearch = () => {
         <div className="api-response">
           <div className="api-response-header">
             <h6>Rest API Response</h6>
-            <button onClick={handleCopy} className="copy-button">Copy</button>
+            <div>
+              <DownloadButton 
+              fileContent={apiResponse}
+              fileName="APIDefinition.yaml"
+              fileType="yaml"
+              />
+              <button onClick={handleCopy} className="copy-button">Copy</button>
+            </div>
           </div>
           <SyntaxHighlighter language={responseFormat === 'json' ? 'json' : 'yaml'} style={docco}>
             {apiResponse}

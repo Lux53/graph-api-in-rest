@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Fzf } from 'fzf';
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
 import yaml_lang from 'react-syntax-highlighter/dist/esm/languages/hljs/yaml';
@@ -69,8 +69,8 @@ const FuzzySearch = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showExistingApiInput, setShowExistingApiInput] = useState(false);
-  const [existingApiInput, setExistingApiInput] = useState('');
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Create a memoized instance of Fzf
   const fzf = useMemo(() => new Fzf(mockFilePaths), []);
@@ -108,7 +108,6 @@ const FuzzySearch = () => {
     setIsLoading(true);
     setError(null);
     
-    // const encodedItems = selectedItems.map(item => btoa(item));
     const url = `${API_BASE_URL}/batch`;
     console.log(`API call to: ${url}`);
     
@@ -163,24 +162,28 @@ const FuzzySearch = () => {
     });
   };
 
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setUploadedFile(file);
+      // You can add additional logic here, such as reading the file content
+      // or sending it to the server
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current.click();
+  };
+
   const DownloadButton = ({ fileContent, fileName, fileType }) => {
     const handleDownload = () => {
-      // Create a Blob with the file content
       const blob = new Blob([fileContent], { type: fileType });
-      
-      // Create a temporary URL for the Blob
       const url = URL.createObjectURL(blob);
-      
-      // Create a temporary anchor element
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName;
-      
-      // Programmatically click the link to trigger the download
       document.body.appendChild(link);
       link.click();
-      
-      // Clean up
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     };
@@ -190,14 +193,6 @@ const FuzzySearch = () => {
         Download File
       </button>
     );
-  };
-
-  const handleAddExistingApi = () => {
-    setShowExistingApiInput(!showExistingApiInput);
-  };
-
-  const handleExistingApiInputChange = (e) => {
-    setExistingApiInput(e.target.value);
   };
 
   return (
@@ -238,20 +233,23 @@ const FuzzySearch = () => {
             <button onClick={handleBatchRequest} className="batch-request-button">
               Convert 
             </button>
-            <button onClick={handleAddExistingApi} className="add-existing-api-button">
-              Add existing API
+            <button onClick={handleUploadClick} className="upload-api-button">
+              Upload API File
             </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+              accept=".yaml,.yml,.json,.txt"
+            />
           </div>
+          {uploadedFile && (
+            <div className="uploaded-file-info">
+              Uploaded: {uploadedFile.name}
+            </div>
+          )}
         </div>
-      )}
-      {showExistingApiInput && (
-        <textarea
-          value={existingApiInput}
-          onChange={handleExistingApiInputChange}
-          placeholder="Paste your existing API here..."
-          className="existing-api-input"
-          rows={10}
-        />
       )}
       {isLoading && <div className="loading">Loading...</div>}
       {error && <div className="error">{error}</div>}
